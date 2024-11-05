@@ -1,8 +1,9 @@
-import { Elevator as TElevator } from '@/modules/elevators/hooks/use-manager';
+import { Job, Elevator as TElevator } from '@/modules/elevators/hooks/use-manager';
 
 type ElevatorProps = TElevator & {
   totalFloors: number;
   className?: string;
+  job?: Job;
 };
 
 function getTopValue(floor: number, totalFloors: number) {
@@ -12,7 +13,7 @@ function getTopValue(floor: number, totalFloors: number) {
   return `${totalHeight - floor * floorHeight}px`;
 }
 
-export function Elevator({ id, currentFloor, totalFloors }: ElevatorProps) {
+export function Elevator({ id, currentFloor, totalFloors, job }: ElevatorProps) {
   const topValue = getTopValue(currentFloor.number, totalFloors);
 
   return (
@@ -24,6 +25,13 @@ export function Elevator({ id, currentFloor, totalFloors }: ElevatorProps) {
         >
           <h1>Elevator: {id}</h1>
           <h2>Floor: {currentFloor.name ?? currentFloor.number}</h2>
+
+          {job && (
+            <div className="mt-2 text-sm">
+              <p>Job From: {job.from.name ?? job.from.number}</p>
+              <p>Job To: {job.to.name ?? job.to.number}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
