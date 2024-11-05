@@ -3,7 +3,7 @@ import { Elevator } from '@/modules/elevators/components/elevator';
 import { useManager } from '@/modules/elevators/hooks/use-manager';
 
 export function Elevators() {
-  const { elevators, floors, createJob } = useManager();
+  const { elevators, floors, createJob, jobs } = useManager();
 
   return (
     <div className="flex w-full gap-12">
@@ -18,9 +18,11 @@ export function Elevators() {
       </div>
 
       <div className="flex gap-10">
-        {elevators.map((props) => (
-          <Elevator key={props.id} {...props} totalFloors={floors.length} />
-        ))}
+        {elevators.map((props) => {
+          const job = jobs.find((j) => j.elevatorId === props.id);
+
+          return <Elevator key={props.id} {...props} totalFloors={floors.length} job={job} />;
+        })}
       </div>
     </div>
   );
