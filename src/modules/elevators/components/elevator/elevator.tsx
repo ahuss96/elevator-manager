@@ -1,4 +1,4 @@
-import { Job, Elevator as TElevator } from '@/modules/elevators/hooks/use-manager';
+import { Job, Elevator as TElevator } from '@/modules/elevators/stores/elevator.store';
 
 type ElevatorProps = TElevator & {
   totalFloors: number;
@@ -13,7 +13,7 @@ function getTopValue(floor: number, totalFloors: number) {
   return `${totalHeight - floor * floorHeight}px`;
 }
 
-export function Elevator({ id, currentFloor, totalFloors, job }: ElevatorProps) {
+export function Elevator({ id, currentFloor, totalFloors, job, status }: ElevatorProps) {
   const topValue = getTopValue(currentFloor.number, totalFloors);
 
   return (
@@ -21,10 +21,14 @@ export function Elevator({ id, currentFloor, totalFloors, job }: ElevatorProps) 
       <div className="relative w-full">
         <div
           style={{ top: topValue }}
-          className="duration-900 absolute flex h-[200px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all"
+          className="absolute flex h-[200px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all duration-900"
         >
           <h1>Elevator: {id}</h1>
           <h2>Floor: {currentFloor.name ?? currentFloor.number}</h2>
+
+          <div className="mt-2 text-center text-sm">
+            <p>Status: {status}</p>
+          </div>
 
           {job && (
             <div className="mt-2 text-sm">

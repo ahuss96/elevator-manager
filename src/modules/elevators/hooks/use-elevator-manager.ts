@@ -1,58 +1,46 @@
 import { useElevatorStore } from '@/modules/elevators/stores/elevator.store';
 import { useEffect } from 'react';
-import { useShallow } from 'zustand/shallow';
 
 const INTERVAL_MS = 1000;
 
 export function useElevatorManager() {
-  const { jobs, getElevatorById, moveElevator, removeJob, getNextJob } = useElevatorStore(
-    useShallow((state) => ({
-      jobs: state.jobs,
-      getElevatorById: state.getElevatorById,
-      moveElevator: state.moveElevator,
-      removeJob: state.removeJob,
-      getNextJob: state.getNextJob,
-    })),
-  );
+  const store = useElevatorStore((state) => state);
 
   useEffect(() => {
+    console.log(store.elevators[0].jobs);
+
     const interval = setInterval(() => {
-      const elevatorJobs = Object.entries(jobs);
-
-      if (!elevatorJobs.length) {
-        clearInterval(interval);
-        return;
-      }
-
-      elevatorJobs.forEach(([elevatorId, elevatorJobs]) => {
-        const elId = parseInt(elevatorId);
-
-        if (!elevatorJobs.length) {
+      store.elevators.forEach(({ jobs, id, currentFloor }) => {
+        if (!jobs.length) {
           clearInterval(interval);
           return;
         }
 
-        const jobToProgress = getNextJob(elId);
+        const jobToProgress = store.getNextJob(id);
 
-        console.log(jobToProgress);
+        console.log(`Current floor: ${currentFloor.number}, current job: ${jobToProgress.id}`);
+        console.log(
+          `Using elevator ${jobToProgress.elevatorId} to go from ${jobToProgress.from.number} to ${jobToProgress.to.number}`,
+        );
 
-        const elevator = getElevatorById(elId);
+        if (currentFloor.number < jobToProgress.to.number) {
+          // console.log(`Elevator ${id} moving up to ${currentFloor.number + 1}`);
 
-        if (elevator.currentFloor.number < jobToProgress.to.number) {
-          console.log(`Elevator ${elevator.id} moving up to ${elevator.currentFloor.number + 1}`);
-          moveElevator(elId, 1);
-        } else if (elevator.currentFloor.number > jobToProgress.to.number) {
-          console.log(`Elevator ${elevator.id} moving down to ${elevator.currentFloor.number - 1}`);
+          store.moveElevator(id, 1);
+        } else if (currentFloor.number > jobToProgress.to.number) {
+          // console.log(`Elevator ${id} moving down to ${currentFloor.number - 1}`);
 
-          moveElevator(elId, -1);
+          store.moveElevator(id, -1);
         } else {
-          console.log(`Elevator ${elevator.id} has arrived at destination ${jobToProgress.to.number}. Removing job.`);
+          // console.log(`Elevator ${id} has arrived at destination ${jobToProgress.to.number}. Removing job.`);
 
-          removeJob(jobToProgress);
+          store.removeJob(id, jobToProgress);
         }
+
+        console.log('\n\n\n');
       });
     }, INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [getElevatorById, getNextJob, jobs, moveElevator, removeJob]);
+  }, [store]);
 }
