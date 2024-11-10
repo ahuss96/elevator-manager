@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Floor } from '@/modules/elevators/hooks/use-manager';
+import { Floor } from '@/modules/elevators/stores/elevator.store';
 
 type CallElevatorProps = {
   floor: Floor;
@@ -12,7 +12,9 @@ export function CallElevator({ floor, floors, onElevatorCall }: CallElevatorProp
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline">Call</Button>
+        <Button variant="outline" size="sm">
+          Call
+        </Button>
       </PopoverTrigger>
 
       <PopoverContent className="w-auto" side="right">

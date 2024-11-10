@@ -1,3 +1,5 @@
+import { CogIcon } from '@/components/ui/cog';
+import { cn } from '@/lib/utils';
 import { Elevator as TElevator } from '@/modules/elevators/stores/elevator.store';
 
 type ElevatorProps = TElevator & {
@@ -6,7 +8,7 @@ type ElevatorProps = TElevator & {
 };
 
 function getTopValue(floor: number, totalFloors: number) {
-  const floorHeight = 200;
+  const floorHeight = 100;
   const totalHeight = (totalFloors - 1) * floorHeight;
 
   return `${totalHeight - floor * floorHeight}px`;
@@ -16,17 +18,20 @@ export function Elevator({ id, currentFloor, totalFloors, status }: ElevatorProp
   const topValue = getTopValue(currentFloor.number, totalFloors);
 
   return (
-    <div className="h-full w-[125px]">
+    <div className="h-full w-[50px]">
       <div className="relative w-full">
+        <div className="absolute -top-[150px] flex w-full flex-col items-center gap-8">
+          <CogIcon className={cn('size-[50px]', status !== 'idle' && 'animate-spin-slow')} />
+
+          <div className={cn(status !== 'idle' && 'text-amber-600')}>{id}</div>
+        </div>
+
         <div
           style={{ top: topValue }}
-          className="absolute flex h-[200px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all duration-1000"
+          className="absolute flex h-[100px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all duration-1000"
         >
-          <h1>Elevator: {id}</h1>
-          <h2>Floor: {currentFloor.name ?? currentFloor.number}</h2>
-
-          <div className="mt-2 text-center text-sm">
-            <p>Status: {status}</p>
+          <div className="text-center text-sm">
+            <p>{status.toUpperCase()}</p>
           </div>
         </div>
       </div>

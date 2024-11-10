@@ -23,7 +23,8 @@ export type Trip = {
   dropOff: Job;
 };
 
-type ElevatorStatus = 'idle' | 'moving up' | 'moving down';
+export type ElevatorStatus = 'idle' | 'up' | 'down';
+
 export type Elevator = {
   id: number;
   currentFloor: Floor;
@@ -46,7 +47,7 @@ export type ElevatorState = {
   moveElevator(elevatorId: number, modifier: number): void;
 };
 
-const NUMBER_OF_FLOORS = 4;
+const NUMBER_OF_FLOORS = 7;
 
 const floors = Array.from({ length: NUMBER_OF_FLOORS }, (_, index) => ({
   number: index,
@@ -60,6 +61,9 @@ export const useElevatorStore = create<ElevatorState>()(
       { id: 0, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
       { id: 1, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
       { id: 2, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
+      { id: 3, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
+      { id: 4, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
+      { id: 5, currentFloor: floors[floors.length - 1], status: 'idle', trips: [] },
     ],
 
     getElevatorById(elevatorId) {
@@ -186,7 +190,7 @@ export const useElevatorStore = create<ElevatorState>()(
               return {
                 ...el,
                 currentFloor: newFloor,
-                status: modifier > 0 ? 'moving up' : 'moving down',
+                status: modifier > 0 ? 'up' : 'down',
               };
             return el;
           }),

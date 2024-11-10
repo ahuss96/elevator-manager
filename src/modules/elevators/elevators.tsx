@@ -12,11 +12,11 @@ export function Elevators() {
   useElevatorManager();
 
   return (
-    <div className="flex w-full gap-12">
+    <div className="flex w-full gap-8">
       <div className="flex flex-col divide-y border">
         {floors.map((thisFloor) => (
-          <div key={thisFloor.number} className="flex h-[200px] flex-col items-center justify-center gap-4 px-4">
-            <h1>Floor: {thisFloor.name ?? thisFloor.number}</h1>
+          <div key={thisFloor.number} className="flex h-[100px] flex-col items-center justify-center gap-4 px-2">
+            <h1>{thisFloor.name ?? thisFloor.number}</h1>
 
             <CallElevator
               floor={thisFloor}
@@ -27,7 +27,7 @@ export function Elevators() {
         ))}
       </div>
 
-      <div className="flex gap-10">
+      <div className="flex gap-8">
         {elevators.map((props) => (
           <Elevator key={props.id} {...props} totalFloors={floors.length} />
         ))}
