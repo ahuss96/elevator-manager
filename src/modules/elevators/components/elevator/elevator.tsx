@@ -20,7 +20,7 @@ export function Elevator({ id, currentFloor, totalFloors, status }: ElevatorProp
       <div className="relative w-full">
         <div
           style={{ top: topValue }}
-          className="absolute flex h-[200px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all duration-900"
+          className="absolute flex h-[200px] w-full flex-col items-center justify-center bg-slate-700 text-white transition-all duration-1000"
         >
           <h1>Elevator: {id}</h1>
           <h2>Floor: {currentFloor.name ?? currentFloor.number}</h2>

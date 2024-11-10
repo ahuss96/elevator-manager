@@ -8,37 +8,62 @@ export function useElevatorManager() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      store.elevators.forEach(({ jobs, id, currentFloor }) => {
-        if (!jobs.length) {
-          clearInterval(interval);
+      store.elevators.forEach(({ trips, id, currentFloor }) => {
+        if (!trips.length) {
           return;
         }
 
-        console.log(jobs);
+        const tripToProgress = trips[0]; // trips are sorted on trip creation
+        const { pickup, dropOff: dropOff, id: tripId, elevatorId } = tripToProgress;
 
-        const jobToProgress = jobs[0];
+        console.log(`Elevator ${id}: on floor ${currentFloor.number}`);
 
-        // console.log(`Current floor: ${currentFloor.number}, current job: ${jobToProgress.id}`);
-        // console.log(
-        //   `Using elevator ${jobToProgress.elevatorId} to go from ${currentFloor.number} to ${jobToProgress.to.number}`,
-        // );
+        // Handle the pickup job first if it's not completed
+        if (pickup.status !== 'completed') {
+          if (currentFloor.number < pickup.to.number) {
+            console.log(`Elevator ${id}: moving up to pickup on ${pickup.to.number}`);
 
-        if (currentFloor.number < jobToProgress.to.number) {
-          // console.log(`Elevator ${id} moving up to ${currentFloor.number + 1}`);
+            store.moveElevator(id, 1); // Move up
+          } else if (currentFloor.number > pickup.to.number) {
+            console.log(`Elevator ${id}: moving down to pickup on ${pickup.to.number}`);
 
-          store.moveElevator(id, 1);
-        } else if (currentFloor.number > jobToProgress.to.number) {
-          // console.log(`Elevator ${id} moving down to ${currentFloor.number - 1}`);
+            store.moveElevator(id, -1); // Move down
+          } else {
+            // Elevator reached pickup floor
+            console.log(`Elevator ${id}: completed pickup on ${pickup.to.number}`);
 
-          store.moveElevator(id, -1);
+            store.updateJobStatus(id, pickup.id, 'completed'); // Mark pickup as completed
+          }
         } else {
-          // console.log(`Elevator ${id} has arrived at destination ${jobToProgress.to.number}. Removing job.`);
+          // Pickup is completed, handle the dropOff
+          if (dropOff.status !== 'completed') {
+            if (currentFloor.number < dropOff.to.number) {
+              console.log(`Elevator ${id}: moving up to drop off on ${dropOff.to.number}`);
 
-          store.removeJob(id, jobToProgress);
+              store.moveElevator(id, 1); // Move up
+            } else if (currentFloor.number > dropOff.to.number) {
+              console.log(`Elevator ${id}: moving down to drop off on ${dropOff.to.number}`);
+
+              store.moveElevator(id, -1); // Move down
+            } else {
+              // Elevator reached dropOff floor
+              console.log(`Elevator ${id}: completed drop off on ${dropOff.to.number}`);
+              store.updateJobStatus(id, dropOff.id, 'completed'); // Mark dropOff as completed
+              store.removeTrip(elevatorId, tripId); // Remove the trip once pickup and dropOff are complete
+
+              // Check if there are no trips left after removing the current one
+              const updatedElevator = store.getElevatorById(id);
+              if (updatedElevator.trips.length === 0) {
+                store.updateElevatorStatus(id, 'idle'); // Set to idle if no trips remain
+              }
+            }
+          }
         }
 
         console.log('\n\n\n');
       });
+
+      return clearInterval(interval);
     }, INTERVAL_MS);
 
     return () => clearInterval(interval);

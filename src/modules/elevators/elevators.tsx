@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/shallow';
 
 export function Elevators() {
   const { elevators, addJob, floors } = useElevatorStore(
-    useShallow((state) => ({ addJob: state.addJob, elevators: state.elevators, floors: state.floors })),
+    useShallow((state) => ({ addJob: state.createTrip, elevators: state.elevators, floors: state.floors })),
   );
 
   useElevatorManager();
