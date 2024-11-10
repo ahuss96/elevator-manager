@@ -7,8 +7,6 @@ export function useElevatorManager() {
   const store = useElevatorStore((state) => state);
 
   useEffect(() => {
-    console.log(store.elevators[0].jobs);
-
     const interval = setInterval(() => {
       store.elevators.forEach(({ jobs, id, currentFloor }) => {
         if (!jobs.length) {
@@ -16,12 +14,14 @@ export function useElevatorManager() {
           return;
         }
 
-        const jobToProgress = store.getNextJob(id);
+        console.log(jobs);
 
-        console.log(`Current floor: ${currentFloor.number}, current job: ${jobToProgress.id}`);
-        console.log(
-          `Using elevator ${jobToProgress.elevatorId} to go from ${jobToProgress.from.number} to ${jobToProgress.to.number}`,
-        );
+        const jobToProgress = jobs[0];
+
+        // console.log(`Current floor: ${currentFloor.number}, current job: ${jobToProgress.id}`);
+        // console.log(
+        //   `Using elevator ${jobToProgress.elevatorId} to go from ${currentFloor.number} to ${jobToProgress.to.number}`,
+        // );
 
         if (currentFloor.number < jobToProgress.to.number) {
           // console.log(`Elevator ${id} moving up to ${currentFloor.number + 1}`);

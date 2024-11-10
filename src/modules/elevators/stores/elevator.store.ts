@@ -10,8 +10,9 @@ export type Floor = {
 export type Job = {
   elevatorId: number;
   id: string;
-  from: Floor;
+  tripId: string;
   to: Floor;
+  isPickup?: boolean;
 };
 
 export type Elevator = {
@@ -28,14 +29,13 @@ type ElevatorState = {
   getElevatorById(elevatorId: number): Elevator;
   getFloorByNumber(floorNum: number): Floor;
 
-  addJob(job: Omit<Job, 'elevatorId' | 'id'>): void;
+  addJob(job: Omit<Job, 'elevatorId' | 'id' | 'tripId'> & { from: Floor }): void;
   removeJob(elevatorId: number, job: Job): void;
-  getNextJob(elevatorId: number): Job;
 
   moveElevator(elevatorId: number, modifier: number): void;
 };
 
-const NUMBER_OF_FLOORS = 7;
+const NUMBER_OF_FLOORS = 4;
 
 const floors = Array.from({ length: NUMBER_OF_FLOORS }, (_, index) => ({
   number: index,
@@ -46,41 +46,36 @@ function getDirectionOfElevator(to: Floor, from: Floor) {
   return to.number > from.number ? 'moving up' : 'moving down';
 }
 
-function getCostForElevator(elevatorId: number, from: Floor, to: Floor): number {
-  const { getElevatorById } = useElevatorStore.getState();
-  return Math.abs(getElevatorById(elevatorId).currentFloor.number - from.number) + Math.abs(from.number - to.number);
-}
-
-function calculateCost(from: Floor, to: Floor) {
+function getCheapestElevator(from: Floor, to: Floor) {
   const { elevators } = useElevatorStore.getState();
 
-  return elevators.map((elevator) => {
-    // current elevator's jobs
-    const currentFloor = elevator.currentFloor.number;
+  return elevators
+    .map((elevator) => {
+      // current elevator's jobs
+      const currentFloor = elevator.currentFloor.number;
 
-    let totalCost = 0;
+      let totalCost = 0;
 
-    if (!elevator.jobs.length) {
-      // If there are no jobs, calculate the cost directly from the current floor to the new job's floors
-      totalCost += Math.abs(currentFloor - from.number) + Math.abs(from.number - to.number);
-    } else {
-      const elevatorDirection = getDirectionOfElevator(elevator.jobs[0].to, elevator.jobs[0].from);
-
-      // If the new job is in the current direction, add it as part of the route
-      if (
-        (elevatorDirection === 'moving up' && from.number >= currentFloor) ||
-        (elevatorDirection === 'moving down' && from.number <= currentFloor)
-      ) {
+      if (!elevator.jobs.length) {
+        // If there are no jobs, calculate the cost directly from the current floor to the new job's floors
         totalCost += Math.abs(currentFloor - from.number) + Math.abs(from.number - to.number);
       } else {
-        // If the job requires a direction change, calculate cost from final job's floor
-        const finalJob = elevator.jobs[elevator.jobs.length - 1].to.number;
-        totalCost += Math.abs(currentFloor - finalJob) + Math.abs(from.number - to.number);
+        // If the new job is in the current direction, add it as part of the route
+        if (
+          (elevator.status === 'moving up' && from.number >= currentFloor) ||
+          (elevator.status === 'moving down' && from.number <= currentFloor)
+        ) {
+          totalCost += Math.abs(currentFloor - from.number) + Math.abs(from.number - to.number);
+        } else {
+          // If the job requires a direction change, calculate cost from final job's floor
+          const finalJob = elevator.jobs[elevator.jobs.length - 1].to.number;
+          totalCost += Math.abs(currentFloor - finalJob) + Math.abs(from.number - to.number);
+        }
       }
-    }
 
-    return { ...elevator, cost: totalCost };
-  });
+      return { ...elevator, cost: totalCost };
+    })
+    .sort((a, b) => a.cost - b.cost)[0];
 }
 
 export const useElevatorStore = create<ElevatorState>()(
@@ -88,8 +83,8 @@ export const useElevatorStore = create<ElevatorState>()(
     floors,
     elevators: [
       { id: 0, currentFloor: floors[floors.length - 1], status: 'idle', jobs: [] },
-      { id: 1, currentFloor: floors[floors.length - 1], status: 'idle', jobs: [] },
-      { id: 2, currentFloor: floors[floors.length - 1], status: 'idle', jobs: [] },
+      // { id: 1, currentFloor: floors[floors.length - 1], status: 'idle', jobs: [] },
+      // { id: 2, currentFloor: floors[floors.length - 1], status: 'idle', jobs: [] },
     ],
 
     getElevatorById(elevatorId) {
@@ -112,30 +107,62 @@ export const useElevatorStore = create<ElevatorState>()(
       console.log(`Elevator requested from ${from.name ?? from.number} to ${to.name ?? to.number}`);
 
       set((state) => {
-        const cheapestElevator = [...calculateCost(from, to)].sort((a, b) => a.cost - b.cost)[0];
+        const cheapestElevator = getCheapestElevator(from, to);
 
         const { jobs: existingJobs } = state.getElevatorById(cheapestElevator.id);
+
+        const tripId = uuidv4();
 
         const pickupJob: Job = {
           elevatorId: cheapestElevator.id,
           id: uuidv4(),
-          from: cheapestElevator.currentFloor,
           to: from,
+          isPickup: true,
+          tripId,
         };
-        const dropOffJob: Job = { elevatorId: cheapestElevator.id, id: uuidv4(), from, to };
 
-        const updatedJobs: Job[] = [
-          ...existingJobs,
-          ...(pickupJob.from.number === pickupJob.to.number ? [] : [pickupJob]),
-          dropOffJob,
-        ];
+        const dropOffJob: Job = { elevatorId: cheapestElevator.id, id: uuidv4(), to, tripId };
+
+        const updatedJobs: Job[] = [...existingJobs];
+
+        // only create pickup job if picking up from a different floor
+        // if (cheapestElevator.currentFloor.number !== from.number) {
+        updatedJobs.push(pickupJob);
+        // }
+
+        updatedJobs.push(dropOffJob);
 
         return {
           elevators: state.elevators.map((el) => {
             if (el.id === cheapestElevator.id) {
               return {
                 ...el,
-                jobs: updatedJobs,
+                jobs: updatedJobs.sort((a, b) => {
+                  const jobADirection = getDirectionOfElevator(a.to, cheapestElevator.currentFloor);
+                  const jobBDirection = getDirectionOfElevator(b.to, cheapestElevator.currentFloor);
+
+                  if (a.to.number === 3) console.log(jobADirection);
+                  if (b.to.number === 3) console.log(jobBDirection);
+
+                  const isJobAInSameDirection = cheapestElevator.status === jobADirection;
+                  const isJobBInSameDirection = cheapestElevator.status === jobBDirection;
+
+                  // 1. Prioritize direction matching
+                  if (isJobAInSameDirection && !isJobBInSameDirection) return -1;
+                  if (!isJobAInSameDirection && isJobBInSameDirection) return 1;
+
+                  // 2. Prioritize pickups before dropoffs for the same tripId
+                  if (a.tripId === b.tripId) {
+                    if (a.isPickup && !b.isPickup) return -1;
+                    if (!a.isPickup && b.isPickup) return 1;
+                  }
+
+                  // 3. Sort by cost if direction and pickup/dropoff are the same
+                  const jobACost = getCheapestElevator(cheapestElevator.currentFloor, a.to);
+                  const jobBCost = getCheapestElevator(cheapestElevator.currentFloor, b.to);
+
+                  return jobACost.cost - jobBCost.cost;
+                }),
               };
             }
 
@@ -162,24 +189,6 @@ export const useElevatorStore = create<ElevatorState>()(
           }),
         };
       });
-    },
-
-    getNextJob(elevatorId) {
-      const { jobs, status } = get().getElevatorById(elevatorId);
-
-      if (!jobs?.length) {
-        throw new Error('No jobs found for elevator');
-      }
-
-      if (jobs.length === 1) return jobs[0];
-
-      const jobsInSameDirection = jobs.filter((job) => status === getDirectionOfElevator(job.to, job.from));
-
-      if (!jobsInSameDirection.length) return jobs[0];
-
-      return [...jobsInSameDirection].sort(
-        (a, b) => getCostForElevator(elevatorId, a.from, a.to) - getCostForElevator(elevatorId, b.from, b.to),
-      )[0];
     },
 
     moveElevator(elevatorId, modifier) {

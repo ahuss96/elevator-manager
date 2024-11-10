@@ -2,11 +2,12 @@ import { CallElevator } from '@/modules/elevators/components/call-elevator';
 import { Elevator } from '@/modules/elevators/components/elevator';
 import { useElevatorManager } from '@/modules/elevators/hooks/use-elevator-manager';
 import { useElevatorStore } from '@/modules/elevators/stores/elevator.store';
+import { useShallow } from 'zustand/shallow';
 
 export function Elevators() {
-  const elevators = useElevatorStore((state) => state.elevators);
-  const floors = useElevatorStore((state) => state.floors);
-  const addJob = useElevatorStore((state) => state.addJob);
+  const { elevators, addJob, floors } = useElevatorStore(
+    useShallow((state) => ({ addJob: state.addJob, elevators: state.elevators, floors: state.floors })),
+  );
 
   useElevatorManager();
 
@@ -27,11 +28,9 @@ export function Elevators() {
       </div>
 
       <div className="flex gap-10">
-        {elevators.map((props) => {
-          const job = undefined;
-
-          return <Elevator key={props.id} {...props} totalFloors={floors.length} job={job} />;
-        })}
+        {elevators.map((props) => (
+          <Elevator key={props.id} {...props} totalFloors={floors.length} />
+        ))}
       </div>
     </div>
   );
