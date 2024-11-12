@@ -1,7 +1,7 @@
 import { Elevator, Floor, Trip, useElevatorStore } from '@/modules/elevators/stores/elevator.store';
 
 export function getDirectionOfElevator(to: Floor, from: Floor) {
-  return to.number > from.number ? 'moving up' : 'moving down';
+  return to.number > from.number ? 'up' : 'down';
 }
 
 export function getCost(from: number, to: number) {
@@ -15,33 +15,30 @@ export function getCheapestElevator(from: Floor, to: Floor) {
     .map((elevator) => {
       const currentFloor = elevator.currentFloor.number;
 
-      // 1. If no trips exist, calculate cost directly from current position
       if (!elevator.trips.length) {
-        const initialCost = calculateDirectCost(currentFloor, from.number, to.number);
-        return { ...elevator, cost: initialCost };
+        // No trips, so calculate the full cost from current position
+        const idleCost = calculateDirectCost(currentFloor, from.number, to.number);
+        return { ...elevator, cost: idleCost };
       }
 
-      // 2. If the elevator has trips, calculate cost based on current direction and trips
+      // If there are trips, determine cost based on current direction
       const finalTripFloor = elevator.trips[elevator.trips.length - 1].dropOff.to.number;
-
-      // Determine if the elevator is currently moving in the direction of the pickup
       const isMovingTowardsPickup =
-        (elevator.status === 'moving up' && from.number >= currentFloor) ||
-        (elevator.status === 'moving down' && from.number <= currentFloor);
+        (elevator.status === 'up' && from.number >= currentFloor) ||
+        (elevator.status === 'down' && from.number <= currentFloor);
 
       let totalCost;
-
       if (isMovingTowardsPickup) {
-        // If the elevator is already moving towards the pickup floor, calculate direct cost
-        totalCost = calculateDirectCost(currentFloor, from.number, to.number);
+        // For elevators en route, calculate reduced cost only to pickup
+        totalCost = getCost(currentFloor, from.number);
       } else {
-        // If the elevator is moving in the opposite direction, calculate detour cost
+        // For elevators moving in the opposite direction, calculate detour cost
         totalCost = calculateDirectionChangeCost(currentFloor, finalTripFloor, from.number, to.number);
       }
 
-      // 3. Factor in the cost to reach the final destination after the pickup
-      const detourToDropOffCost = getCost(from.number, to.number);
-      totalCost += detourToDropOffCost;
+      // Add the remaining cost to reach the drop-off
+      const dropOffCost = getCost(from.number, to.number);
+      totalCost += dropOffCost;
 
       return { ...elevator, cost: totalCost };
     })

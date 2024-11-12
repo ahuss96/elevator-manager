@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { getCheapestElevator, sortTrips } from '@/modules/elevators/stores/utils';
+import { getCheapestElevator } from '@/modules/elevators/stores/utils';
 
 export type Floor = {
   number: number;
@@ -106,7 +106,7 @@ export const useElevatorStore = create<ElevatorState>()(
         const pickupJob: Job = {
           id: uuidv4(),
           to: from,
-          status: 'pending',
+          status: cheapestElevator.currentFloor.number === from.number ? 'completed' : 'pending',
         };
 
         const dropOffJob: Job = {
@@ -115,7 +115,7 @@ export const useElevatorStore = create<ElevatorState>()(
           status: 'pending',
         };
 
-        // Add the new trip to the selected elevator’s trips
+        // Add the new trip to the selected elevator’s trips (without sorting here)
         const updatedTrips: Trip[] = [
           ...existingTrips,
           {
@@ -131,7 +131,7 @@ export const useElevatorStore = create<ElevatorState>()(
             if (el.id === cheapestElevator.id) {
               return {
                 ...el,
-                trips: sortTrips(updatedTrips, el),
+                trips: updatedTrips,
               };
             }
             return el;
